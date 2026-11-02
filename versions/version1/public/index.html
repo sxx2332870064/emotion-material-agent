@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emotion-to-Material Exploration Assistant</title>
+
+  <style>
+    :root {
+      --paper: #f4f1ea;
+      --ink: #1c2523;
+      --muted: #65706d;
+      --line: #c9cfca;
+      --teal: #176c67;
+      --orange: #d66d38;
+      --white: #ffffff;
+      --warning: #8b3d27;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+    }
+
+    .skip-link:focus {
+      left: 1rem;
+      top: 1rem;
+      padding: 0.7rem 1rem;
+      color: white;
+      background: var(--ink);
+      z-index: 10;
+    }
+
+    header {
+      padding: 1.4rem clamp(1rem, 5vw, 4rem);
+      border-bottom: 1px solid var(--line);
+      background: rgba(244, 241, 234, 0.97);
+    }
+
+    header h1 {
+      max-width: 800px;
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 3.2rem);
+      line-height: 1.05;
+    }
+
+    header p {
+      max-width: 750px;
+      margin: 0.75rem 0 0;
+      color: var(--muted);
+    }
+
+    .version {
+      display: inline-block;
+      margin-bottom: 0.7rem;
+      color: var(--teal);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 2rem auto 4rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.8fr) minmax(400px, 1.2fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--white);
+      box-shadow: 0 8px 25px rgba(28, 37, 35, 0.05);
+    }
+
+    .panel-heading {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .panel-heading p {
+      margin: 0.4rem 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    form {
+      padding: 1.25rem;
+    }
+
+    .field {
+      margin-bottom: 1.15rem;
+    }
+
+    label,
+    legend {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 700;
+    }
+
+    .hint {
+      display: block;
+      margin: -0.2rem 0 0.45rem;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.72rem;
+      color: var(--ink);
+      border: 1px solid #9aa5a1;
+      border-radius: 3px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 86px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus,
+    button:focus {
+      outline: 3px solid rgba(23, 108, 103, 0.25);
+      outline-offset: 2px;
+    }
+
+    fieldset {
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+
+    .choice {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+      padding: 0.55rem;
+      border: 1px solid var(--line);
+      font-weight: 400;
+    }
+
+    .choice input {
+      margin-top: 0.2rem;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.25rem;
+    }
+
+    button {
+      padding: 0.7rem 1rem;
+      border: 1px solid var(--ink);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .primary {
+      color: white;
+      background: var(--teal);
+      border-color: var(--teal);
+    }
+
+    .secondary {
+      color: var(--ink);
+      background: white;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.55;
+    }
+
+    .results {
+      min-height: 600px;
+    }
+
+    .status {
+      padding: 0.75rem 1.25rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--line);
+      background: #fafaf8;
+    }
+
+    #output {
+      padding: 1.25rem;
+    }
+
+    .empty {
+      padding: 4rem 1.5rem;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .action-banner {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-left: 6px solid var(--teal);
+      background: #edf6f4;
+    }
+
+    .action-banner.review {
+      border-color: var(--warning);
+      background: #fbefeb;
+    }
+
+    .action-banner h3 {
+      margin: 0 0 0.35rem;
+    }
+
+    .agent-meta {
+      margin: 0 0 1rem;
+      padding: 0.7rem;
+      color: var(--muted);
+      background: #f5f6f4;
+      font-size: 0.82rem;
+      overflow-wrap: anywhere;
+    }
+
+    .question-list,
+    .checklist {
+      padding-left: 1.3rem;
+    }
+
+    .experiment {
+      margin: 0 0 1.2rem;
+      border: 1px solid var(--line);
+      background: white;
+    }
+
+    .experiment-head {
+      padding: 1rem;
+      color: white;
+      background: var(--ink);
+    }
+
+    .experiment-head span {
+      color: #b9d8d3;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .experiment-head h3 {
+      margin: 0.25rem 0 0;
+    }
+
+    .experiment-body {
+      padding: 1rem;
+    }
+
+    .experiment-body h4 {
+      margin: 1rem 0 0.25rem;
+      color: var(--teal);
+    }
+
+    .experiment-body h4:first-child {
+      margin-top: 0;
+    }
+
+    .experiment-body p {
+      margin: 0.25rem 0;
+    }
+
+    .experiment-body ul,
+    .experiment-body ol {
+      margin-top: 0.3rem;
+      padding-left: 1.35rem;
+    }
+
+    .constraint {
+      padding: 0.75rem;
+      border-left: 4px solid var(--orange);
+      background: #fff4ed;
+    }
+
+    .error {
+      padding: 1rem;
+      color: #6d2518;
+      border: 1px solid #d7a191;
+      background: #fff0eb;
+    }
+
+    .confirm-area {
+      margin-top: 1.2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+
+    footer {
+      padding: 1.5rem;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    @media (max-width: 850px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .choices {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main">Skip to the application</a>
+
+  <header>
+    <span class="version">Agent-Based Application · Version 1</span>
+    <h1>Emotion-to-Material Exploration Assistant</h1>
+    <p>
+      A single educational agent decides whether to ask for clarification,
+      generate three controlled material experiments, request human review,
+      or complete the planning process.
+    </p>
+  </header>
+
+  <main id="main">
+    <div class="layout">
+      <section class="panel" aria-labelledby="input-heading">
+        <div class="panel-heading">
+          <h2 id="input-heading">1. Student input</h2>
+          <p>Only include materials, tools, skills, and spaces you really have.</p>
+        </div>
+
+        <form id="planner-form">
+          <div class="field">
+            <label for="emotion">Emotion or concept</label>
+            <span class="hint">
+              Describe the tension or question you want to explore.
+            </span>
+            <textarea id="emotion" name="emotion"></textarea>
+          </div>
+
+          <fieldset class="field">
+            <legend>Available materials and tools</legend>
+            <span class="hint">Select only confirmed resources.</span>
+
+            <div class="choices">
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Laptop with basic p5.js">
+                Laptop with basic p5.js
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Projector">
+                Projector
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Tracing paper">
+                Tracing paper
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Thread">
+                Thread
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Room-temperature modeling wax">
+                Room-temperature modeling wax
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Ink">
+                Ink
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Speakers">
+                Speakers
+              </label>
+
+              <label class="choice">
+                <input type="checkbox" name="materials" value="Small LEDs without confirmed power setup">
+                Small LEDs
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label for="skills">Relevant skills</label>
+            <input
+              id="skills"
+              name="skills"
+              type="text"
+              placeholder="Example: basic p5.js, projection, sewing, hand assembly"
+            >
+          </div>
+
+          <div class="field">
+            <label for="time">Available time</label>
+            <input
+              id="time"
+              name="time"
+              type="text"
+              placeholder="Example: two weeks"
+            >
+          </div>
+
+          <div class="field">
+            <label for="workspace">Workspace</label>
+            <select id="workspace" name="workspace">
+              <option value="">Select a workspace</option>
+              <option value="Tabletop + wall">Tabletop + wall</option>
+              <option value="Tabletop only">Tabletop only</option>
+              <option value="Wall area only">Wall area only</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="budget">Maximum budget</label>
+            <input
+              id="budget"
+              name="budget"
+              type="text"
+              placeholder="Example: $60"
+            >
+          </div>
+
+          <div class="field">
+            <label for="safety">Safety or access limits</label>
+            <textarea
+              id="safety"
+              name="safety"
+              placeholder="Example: no flame, toxic materials, sharp tools, ceiling suspension, or complete darkness"
+            ></textarea>
+          </div>
+
+          <div class="field">
+            <label for="priority">Media priority</label>
+            <input
+              id="priority"
+              name="priority"
+              type="text"
+              value="Digital media should be the main changing system."
+            >
+          </div>
+
+          <div class="field">
+            <label for="context">Additional context or clarification answers</label>
+            <textarea
+              id="context"
+              name="context"
+              placeholder="Add any detail the agent needs, or answer its clarification questions here."
+            ></textarea>
+          </div>
+
+          <div class="button-row">
+            <button class="primary" id="generate-button" type="submit">
+              Ask the Agent
+            </button>
+
+            <button class="secondary" id="clear-button" type="button">
+              Start Over
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel results" aria-labelledby="results-heading">
+        <div class="panel-heading">
+          <h2 id="results-heading" tabindex="-1">2. Agent decision and output</h2>
+          <p>The application keeps observation separate from interpretation.</p>
+        </div>
+
+        <div
+          id="status"
+          class="status"
+          role="status"
+          aria-live="polite"
+        >
+          No request sent yet.
+        </div>
+
+        <div id="output">
+          <div class="empty">
+            Complete the available information and let the agent decide the
+            appropriate next action.
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Material testing only. The student and instructor keep final artistic and
+    safety decisions.
+  </footer>
+
+  <script>
+    const form = document.querySelector("#planner-form");
+    const output = document.querySelector("#output");
+    const statusBox = document.querySelector("#status");
+    const resultsHeading = document.querySelector("#results-heading");
+    const generateButton = document.querySelector("#generate-button");
+    const clearButton = document.querySelector("#clear-button");
+
+    let lastAgentResult = null;
+
+    function escapeHtml(value = "") {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function getSelectedMaterials() {
+      return [...document.querySelectorAll(
+        'input[name="materials"]:checked'
+      )].map((checkbox) => checkbox.value);
+    }
+
+    function collectInput() {
+      return {
+        stage: "plan",
+        emotion: document.querySelector("#emotion").value,
+        materials: getSelectedMaterials(),
+        skills: document.querySelector("#skills").value,
+        time: document.querySelector("#time").value,
+        workspace: document.querySelector("#workspace").value,
+        budget: document.querySelector("#budget").value,
+        safetyLimits: document.querySelector("#safety").value,
+        mediaPriority: document.querySelector("#priority").value,
+        additionalContext: document.querySelector("#context").value
+      };
+    }
+
+    function arrayList(items, ordered = false) {
+      if (!Array.isArray(items) || items.length === 0) {
+        return "<p>None provided.</p>";
+      }
+
+      const tag = ordered ? "ol" : "ul";
+      return `<${tag}>${items
+        .map((item) => `<li>${escapeHtml(item)}</li>`)
+        .join("")}</${tag}>`;
+    }
+
+    function renderExperiment(experiment, index) {
+      return `
+        <article class="experiment">
+          <div class="experiment-head">
+            <span>Experiment ${index + 1}</span>
+            <h3>${escapeHtml(experiment.title)}</h3>
+          </div>
+
+          <div class="experiment-body">
+            <h4>Research question</h4>
+            <p>${escapeHtml(experiment.researchQuestion)}</p>
+
+            <h4>Primary variable and three trials</h4>
+            <p><strong>${escapeHtml(experiment.primaryVariable)}</strong></p>
+            ${arrayList(experiment.trials)}
+
+            <h4>Conditions kept constant</h4>
+            ${arrayList(experiment.constants)}
+
+            <h4>Confirmed materials and tools</h4>
+            ${arrayList(experiment.materials)}
+
+            <h4>Steps</h4>
+            ${arrayList(experiment.steps, true)}
+
+            <h4>Observable evidence</h4>
+            <p>${escapeHtml(experiment.observableEvidence)}</p>
+
+            <h4>Reflection questions</h4>
+            <p>
+              <strong>Technical:</strong>
+              ${escapeHtml(experiment.technicalQuestion)}
+            </p>
+            <p>
+              <strong>Emotional:</strong>
+              ${escapeHtml(experiment.emotionalQuestion)}
+            </p>
+
+            <h4>Constraint check</h4>
+            <p class="constraint">
+              ${escapeHtml(experiment.constraintCheck)}
+            </p>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderAgentResult(result) {
+      const labels = {
+        ASK_CLARIFICATION: "Clarification needed",
+        GENERATE_EXPERIMENTS: "Three experiments generated",
+        REQUEST_HUMAN_REVIEW: "Human review required",
+        COMPLETE: "Planning process complete"
+      };
+
+      const reviewClass =
+        result.action === "REQUEST_HUMAN_REVIEW" ? "review" : "";
+
+      const meta = result.agentMeta || {};
+      const interactionText = meta.interactionId
+        ? `${meta.interactionId.slice(0, 18)}…`
+        : "Not returned";
+
+      let html = `
+        <div class="agent-meta">
+          Live API: ${escapeHtml(meta.provider || "Unknown")} ·
+          Model: ${escapeHtml(meta.model || "Unknown")} ·
+          Status: ${escapeHtml(meta.status || "Unknown")} ·
+          Interaction: ${escapeHtml(interactionText)}
+        </div>
+
+        <div class="action-banner ${reviewClass}">
+          <h3>${escapeHtml(labels[result.action] || result.action)}</h3>
+          <p>${escapeHtml(result.message || "")}</p>
+          <p><strong>Decision reason:</strong>
+            ${escapeHtml(result.reason || "")}
+          </p>
+        </div>
+      `;
+
+      if (result.action === "ASK_CLARIFICATION") {
+        html += `
+          <h3>Questions from the agent</h3>
+          ${arrayList(result.questions)}
+          <p>
+            Answer these questions in “Additional context,” then submit again.
+          </p>
+        `;
+      }
+
+      if (result.action === "GENERATE_EXPERIMENTS") {
+        html += result.experiments
+          .map((experiment, index) => renderExperiment(experiment, index))
+          .join("");
+
+        html += `
+          <div class="confirm-area">
+            <h3>Student decision</h3>
+            <p>
+              Review feasibility and constraints before confirming this plan.
+            </p>
+            <button class="primary" id="confirm-button" type="button">
+              Confirm This Plan
+            </button>
+          </div>
+        `;
+      }
+
+      if (result.action === "REQUEST_HUMAN_REVIEW") {
+        html += `
+          <p>
+            Stop here and review the request with an instructor, technician,
+            or other appropriate person before continuing.
+          </p>
+        `;
+      }
+
+      if (result.action === "COMPLETE") {
+        html += `
+          <h3>Documentation checklist</h3>
+          ${arrayList(result.documentationChecklist)}
+        `;
+      }
+
+      output.innerHTML = html;
+
+      const confirmButton = document.querySelector("#confirm-button");
+      if (confirmButton) {
+        confirmButton.addEventListener("click", confirmPlan);
+      }
+    }
+
+    async function sendToAgent(payload) {
+      generateButton.disabled = true;
+      clearButton.disabled = true;
+      statusBox.textContent =
+        "The agent is reviewing confirmed resources and deciding the next action…";
+
+      try {
+        const response = await fetch("/api/agent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "The request failed.");
+        }
+
+        lastAgentResult = data;
+        renderAgentResult(data);
+        statusBox.textContent = `Agent action: ${data.action}`;
+        resultsHeading.focus();
+      } catch (error) {
+        output.innerHTML = `
+          <div class="error" role="alert">
+            <strong>The request could not be completed.</strong>
+            <p>${escapeHtml(error.message)}</p>
+            <p>Your entered information was preserved. Please try again.</p>
+          </div>
+        `;
+
+        statusBox.textContent = "Agent request failed.";
+        resultsHeading.focus();
+      } finally {
+        generateButton.disabled = false;
+        clearButton.disabled = false;
+      }
+    }
+
+    async function confirmPlan() {
+      if (
+        !lastAgentResult ||
+        lastAgentResult.action !== "GENERATE_EXPERIMENTS"
+      ) {
+        return;
+      }
+
+      const payload = {
+        ...collectInput(),
+        stage: "confirm",
+        confirmedPlan: lastAgentResult.experiments
+      };
+
+      await sendToAgent(payload);
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      await sendToAgent(collectInput());
+    });
+
+    clearButton.addEventListener("click", () => {
+      form.reset();
+      lastAgentResult = null;
+      statusBox.textContent = "No request sent yet.";
+      output.innerHTML = `
+        <div class="empty">
+          Complete the available information and let the agent decide the
+          appropriate next action.
+        </div>
+      `;
+      document.querySelector("#emotion").focus();
+    });
+  </script>
+</body>
+</html>
