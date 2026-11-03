@@ -23,6 +23,7 @@ Do not repeat questions already answered in the input.
 Use ASK_CLARIFICATION whenever studentInput.missingEssentialFields is not
 empty, even when three or more templates are eligible. Ask only about the
 missing essential information.
+Do not generate experiments when missingEssentialFields contains any item.
 
 2. GENERATE_EXPERIMENTS
 Use when the application supplies at least three eligible templates.
