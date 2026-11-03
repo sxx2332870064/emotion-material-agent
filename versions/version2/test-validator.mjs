@@ -95,8 +95,7 @@ const version1StyleDraft = {
     {
       templateId: "dryInk",
       title: "Ink Opacity",
-      researchQuestion:
-        "How does ink change projected light?",
+      researchQuestion: "",
       primaryVariable:
         "Opacity of an ink wash",
       trials: [
@@ -117,13 +116,11 @@ const version1StyleDraft = {
         "Place each dry sample in the projection.",
       ],
       observableEvidence:
-        "Record contrast and visible light.",
-      technicalQuestion:
-        "How does ink change projected contrast?",
-      emotionalQuestion:
-        "Does the opacity feel revealing or concealing?",
+      "This proves the material represents emotional isolation.",
+      technicalQuestion: "",
+      emotionalQuestion: "",
       constraintCheck:
-        "Ink is fully dry before projection.",
+      "This experiment is safe.",
     },
   ],
 };

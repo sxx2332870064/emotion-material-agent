@@ -1,3 +1,4 @@
+import { detectExplicitBoundary } from "./safety-rules.mjs";
 import "dotenv/config";
 import express from "express";
 import path from "node:path";
@@ -9,6 +10,7 @@ import {
   getTemplateSummaries,
 } from "./experiment-library.mjs";
 import { validateAgentOutput } from "./output-validator.mjs";
+import { getMissingEssentialFields } from "./input-rules.mjs";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -314,16 +316,18 @@ app.post("/api/agent", async (request, response) => {
   }
 
   const studentInput = normalizeInput(request.body || {});
+    studentInput.missingEssentialFields =
+      getMissingEssentialFields(studentInput);
   const eligibleTemplates = getEligibleTemplates(
     studentInput.materials,
     studentInput.workspace
   );
 
-  if (detectHardBoundary(studentInput)) {
+  if (detectExplicitBoundary(studentInput)) {
     return response.json({
       action: "REQUEST_HUMAN_REVIEW",
       reason:
-        "A deterministic safety boundary identified diagnosis, therapy, self-harm, open flame, burning wax, or rapid flashing in the request.",
+        "An explicit keyword-based pre-screen identified a diagnostic, therapeutic, or prohibited method phrase. This pre-screen is limited and does not replace instructor safety review.",
       message:
         "This application cannot provide diagnosis or therapy and cannot plan prohibited activity. Stop here and consult an instructor or another appropriate professional.",
       questions: [],

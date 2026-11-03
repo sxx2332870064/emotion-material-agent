@@ -1,3 +1,5 @@
+import { getMissingEssentialFields } from "./input-rules.mjs";
+
 import {
   materialKeyByLabel,
   experimentTemplates,
@@ -28,7 +30,13 @@ const leadingEmotionPattern =
 const documentationToolPattern =
   /\b(photograph|photography|camera|phone|video|screenshot|ruler|measure|measuring)\b/i;
 
-function stripStepNumber(step) {
+const neutralEvidenceVerbPattern =
+  /\b(record|note|observe|compare|document)\b/i;
+
+const interpretiveEvidencePattern =
+  /\b(feel|emotion|meaning|symboli[sz]|represent|protective|restrictive|inviting|isolating)\b/i;
+
+  function stripStepNumber(step) {
   return String(step || "")
     .replace(/^\s*\d+\s*\\?[.)\-:]\s*/, "")
     .trim();
@@ -85,6 +93,8 @@ export function validateAgentOutput(
 ) {
   const result = normalizeArrays(structuredClone(rawResult || {}));
   const issues = [];
+  const missingEssentialFields =
+  getMissingEssentialFields(studentInput);
 
   if (!allowedActions.has(result.action)) {
     issues.push("Return one supported agent action.");
@@ -98,7 +108,10 @@ export function validateAgentOutput(
   const selectedMaterialLabels = new Set(studentInput.materials || []);
 
   if (result.action === "ASK_CLARIFICATION") {
-    if (eligibleTemplates.length >= 3) {
+    if (
+        eligibleTemplates.length >= 3 &&
+        missingEssentialFields.length === 0
+      ) {
       issues.push(
         "Do not ask unnecessary questions because at least three compatible templates are already available."
       );
@@ -124,6 +137,11 @@ export function validateAgentOutput(
   }
 
   if (result.action === "GENERATE_EXPERIMENTS") {
+    if (missingEssentialFields.length > 0) {
+      issues.push(
+      `Do not generate experiments until these essential fields are confirmed: ${missingEssentialFields.join(", ")}.`
+      );
+    }
     if (result.experiments.length !== 3) {
       issues.push("Generate exactly three experiments.");
     }
@@ -147,6 +165,18 @@ export function validateAgentOutput(
       usedIds.add(experiment.templateId);
 
       const template = eligibleMap.get(experiment.templateId);
+
+      const requiredTextFields = [
+  ["researchQuestion", "research question"],
+  ["technicalQuestion", "technical question"],
+  ["emotionalQuestion", "emotional question"],
+];
+
+for (const [field, labelText] of requiredTextFields) {
+  if (!String(experiment[field] || "").trim()) {
+    issues.push(`${label} must include a nonempty ${labelText}.`);
+  }
+}
 
       if (experiment.primaryVariable !== template.variable) {
         issues.push(
@@ -233,15 +263,39 @@ export function validateAgentOutput(
         );
       }
 
-      if (!String(experiment.observableEvidence || "").trim()) {
-        issues.push(
-          `${label} must identify neutral observable evidence.`
-        );
-      }
+      const evidence = String(
+  experiment.observableEvidence || ""
+).trim();
 
-      if (!String(experiment.constraintCheck || "").trim()) {
-        issues.push(`${label} must include a constraint check.`);
-      }
+if (!evidence) {
+  issues.push(
+    `${label} must identify observable evidence.`
+  );
+} else {
+  if (!neutralEvidenceVerbPattern.test(evidence)) {
+    issues.push(
+      `${label} evidence must use a neutral observation verb such as record, note, observe, compare, or document.`
+    );
+  }
+
+  if (interpretiveEvidencePattern.test(evidence)) {
+    issues.push(
+      `${label} evidence contains interpretive or emotional language.`
+    );
+  }
+}
+
+      const constraintCheck = String(
+  experiment.constraintCheck || ""
+).trim();
+
+if (!constraintCheck) {
+  issues.push(`${label} must include a constraint check.`);
+} else if (constraintCheck !== template.safeMethod) {
+  issues.push(
+    `${label} constraint check must exactly match the application-confirmed safe method.`
+  );
+}
     });
   }
 
